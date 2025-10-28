@@ -51,3 +51,56 @@ create table ger_pessoa_documento (
     documento_id int references ger_documento(id)
 );
 
+create table ger_estado (
+    id serial primary key, 
+    versao int, 
+    nome varchar(255),
+    pais varchar(127),
+);
+
+create table ger_cidade (
+    id serial primary key, 
+    versao int, 
+    nome varchar(255),
+    estado int references ger_estado(id)
+);
+
+create table ger_endereco (
+    id serial primary key, 
+    versao int, 
+    rua varchar(255),
+    complemento varchar(512),
+    cep varchar(16),
+    setor varchar(255)
+    cidade_id int references ger_cidade(id)
+);
+
+create table ger_pessoa_endereco (
+    id serial primary key, 
+    versao int, 
+    tipo_id int references ger_tipo(id),
+    pessoa_id int references ger_pessoa(id),
+    endereco_id int references ger_endereco(id)
+);
+
+create table seg_usuario (
+    id serial primary key, 
+    versao int, 
+    pessoa_id int references ger_pessoa(id),
+    codigo varchar(32)
+);
+
+create table seg_perfil (
+    id serial primary key, 
+    versao int, 
+    nome varchar(127),
+    descricao varchar(127)
+);
+
+create table seg_usuario_perfil(
+    id serial primary key, 
+    versao int, 
+    usuario_id int references seg_usuario(id),
+    perfil_id int references seg_usuario(id)
+        
+)
