@@ -5,6 +5,16 @@
 
 --V1
 --drop table ger_tipo_grupo;
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
+
+create table sis_config(
+	id int, 
+	versao int, 
+	primary key(id)
+);
+
+insert into sis_config(id, versao) values (1, 0);
 
 create table sis_empresa(
     id int primary key, 
@@ -54,6 +64,21 @@ create table ger_status (
     atual_id int references ger_status_historico(id)
 );
 
+create table ger_historico_grupo(
+    id serial primary key,
+    versao int,
+    nome varchar(512),
+    observacao text
+);
+
+create table ger_historico (
+    id serial primary key,
+    versao int,
+    data timestamp, 
+    grupo_id int references ger_historico_grupo(id),
+    registro varchar(255)
+);
+
 create table ger_pessoa (
     id serial primary key, 
     versao int, 
@@ -76,20 +101,6 @@ create table seg_usuario (
     codigo varchar(32)
 );
 
-create table ger_historico_grupo(
-    id serial primary key,
-    versao int,
-    nome varchar(512),
-    observacao text
-);
-
-create table ger_historico (
-    id serial primary key,
-    versao int,
-    data timestamp, 
-    grupo_id int references ger_historico_grupo(id),
-    registro varchar(255)
-);
 
 
 create table ger_arquivo (
@@ -224,7 +235,7 @@ create table seg_perfil_funcao(
     id serial primary key, 
     versao int,
     funcao_id int references seg_funcao(id),
-    perfil_id int references seg_perfil(id
+    perfil_id int references seg_perfil(id)
 );
 
 create table ger_telefone (
@@ -318,7 +329,7 @@ create table ger_imposto_contribuicao (
     id serial primary key, 
     versao int,
     status_id int references ger_status(id),
-    nome varchar(127)
+    nome varchar(127),
     observacao text, 
     calculo_id int references ger_calculo(id)
 );
@@ -356,7 +367,7 @@ create table con_conta_contabil (
     status_id int references ger_status(id),
     historico_id int references ger_historico(id),
     codigo varchar(64),
-    referencia varchar(127)
+    referencia varchar(127),
     conta_analitica_id int references con_conta_contabil(id)
 );
 
@@ -364,7 +375,7 @@ create table con_historico (
     id serial primary key, 
     versao int, 
     codigo varchar(64),
-    definicao varchar(512),
+    definicao varchar(512)
 );
 
 create table con_lancamento (
@@ -449,7 +460,7 @@ create table est_pedido_fornecedor_itens (
     historico_id int references ger_historico(id),
     item_id int references ger_item(id),
     quantidade numeric(10,2),
-    valor_unitario numeric(10,2)
+    valor_unitario numeric(10,2),
     valor_total numeric(10,2)
 );
 
@@ -467,7 +478,7 @@ create table est_pedido_fornecedor_itens_valores (
 create table est_estoque_local (
     id serial primary key, 
     versao int, 
-    nome varchar(255)
+    nome varchar(255),
     observacao text,
     local_superior_id int references est_estoque_local(id)
 );
@@ -512,6 +523,7 @@ create table est_estoque_registro (
     versao int, 
     status_id int references ger_status(id),
     historico_id int references ger_historico(id),
+    registro_tipo_id int references est_estoque_registro_tipo(id)
 );
 
 create table est_estoque_regitro_itens (
@@ -563,7 +575,7 @@ create table fin_credor_devedor (
 
     cliente_id int references ger_cliente(id),
     fornecedor_id int references ger_fornecedor(id),
-    pessoa_id int references ger_pessoa(id),
+    pessoa_id int references ger_pessoa(id)
 );
 
 create table fin_dados_bancarios(
@@ -593,7 +605,7 @@ create table fin_conta_ajuste (
     versao int, 
     tipo_id int references ger_tipo(id),
     status_id int references ger_status(id),
-    historico_id int references ger_historico(id),
+    historico_id int references ger_historico(id)
 );
 
 create table fin_conta_ajuste_contas(
@@ -601,7 +613,7 @@ create table fin_conta_ajuste_contas(
     versao int, 
     tipo_id int references ger_tipo(id),
     ajuste_id int references fin_conta_ajuste(id),
-    conta_id int references fin_conta(id),
+    conta_id int references fin_conta(id)
 );
 
 create table fin_pagamento (
@@ -609,7 +621,7 @@ create table fin_pagamento (
     versao int, 
     tipo_id int references ger_tipo(id),
     status_id int references ger_status(id),
-    historico_id int references fin_historico(id),
+    historico_id int references ger_historico(id),
     pagador_id int references fin_credor_devedor(id),
     recebedor_id int references fin_credor_devedor(id),
     valor_total numeric(10,2)
