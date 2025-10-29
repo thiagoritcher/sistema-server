@@ -149,8 +149,135 @@ create table seg_funcao(
 
 create table seg_perfil_funcao(
     id serial primary key, 
-    versao int, 
+    versao int,
     funcao_id int references seg_funcao(id),
-    perfil_id int references seg_perfil(id)
+    perfil_id int references seg_perfil(id
+);
+
+create table ger_telefone (
+    id serial primary key, 
+    versao int,
+    tipo_id int references ger_tipo(id),
+	ddd varchar(8),
+	numero varchar(16)
+);
+
+create table ger_pessoa_telefone (
+    id serial primary key, 
+    versao int,
+    pessoa_id int references ger_pessoa(id),
+    telefone_id int references ger_telefone(id)
+);
+
+create table ger_grupo (
+	id serial primary key, 
+    tipo_id int references ger_tipo(id),
+    versao int,
+    nome varchar(255),
+    superior_id int references ger_grupo(id)
+);
+
+create table ger_cliente (
+    id serial primary key, 
+    versao int,
+    pessoa_id int references ger_pessoa(id)
+);
+
+create table ger_cliente_grupo (
+	id serial primary key, 
+    versao int,
+    grupo_id int references ger_grupo(id),
+    cliente_id int references ger_cliente(id)
+);
+
+create table ger_fornecedor (
+    id serial primary key, 
+    versao int,
+    pessoa_id int references ger_pessoa(id),
+    grupo_id int references ger_cliente_grupo(id)
+);
+
+create table ger_fornecedor_grupo (
+	id serial primary key, 
+    versao int,
+    grupo_id int references ger_grupo(id),
+    fornecedor_id int references ger_fornecedor(id)
+);
+
+create table ger_item(
+	id serial primary key, 
+    versao int,
+    codigo varchar(32), 
+    referencia varchar(32),
+    nome varchar(255),
+    observacao text
+);
+
+create table ger_item_grupo (
+	id serial primary key, 
+    versao int,
+    grupo_id int references ger_grupo(id),
+    item_id int references ger_item(id)
+);
+
+create table ger_calculo (
+	id serial primary key, 
+    versao int,
+    descricao varchar(512),
+    formula varchar(512)
+);
+
+create table ger_condicao_pagamento (
+	id serial primary key, 
+    versao int,
+    nome varchar(255),
+    calculo_id int references ger_calculo(id)
+);
+
+create table cot_cotacao (
+	id serial primary key, 
+    versao int,
+    data timestamp,
+    fornecedor_id int references ger_fornecedor(id)
+);
+
+create table cot_cotacao_item (
+	id serial primary key, 
+    versao int,
+    item_id int references ger_item(id),
+    codigo varchar(32), 
+    referencia varchar(32),
+    nome varchar(255),
+	cotacao_id int references cot_cotacao(id),
+	condicao_id int references ger_condicao_pagamento(id)
+);
+
+create table cot_cotacao_item_valor(
+	id serial primary key, 
+    versao int,
+    valor numeric(10,2),
+    cotacao_id  int references cot_cotacao_item(id),
+	condicao_id int references ger_condicao_pagamento(id)
+);
+
+create table est_tabela_preco (
+	id serial primary key, 
+    versao int,
+    data timestamp,
+    fornecedor_id int references ger_fornecedor(id),
+	cotacao_id int references cot_cotacao(id),
+    item_id int references ger_item(id),
+    codigo varchar(32), 
+    referencia varchar(32),
+    nome varchar(255),
+	condicao_id int references ger_condicao_pagamento(id)
+);
+
+create table est_tabela_preco_item_valor(
+	id serial primary key, 
+    versao int,
+    valor numeric(10,2),
+    cotacao_id  int references cot_cotacao_item(id),
+	condicao_id int references ger_condicao_pagamento(id)
 );
 

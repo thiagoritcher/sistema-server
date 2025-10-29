@@ -4,11 +4,16 @@ package br.com.ritcher.sistema;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.text.CaseUtils;
+
+import lombok.extern.apachecommons.CommonsLog;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Run with 
@@ -18,6 +23,7 @@ import org.apache.commons.text.CaseUtils;
  * java br.com.ritcher.sistema.CreateLayers user_details seguranca /home/user/projects/sistemas/br/com/ritcher/sistemas br.com.ritcher.sistemas seg username:String,password:String
  */
 
+@CommonsLog
 public class CreateLayers {
 
   public static void main(String[] args) {
@@ -50,6 +56,10 @@ public class CreateLayers {
     String name = args[i++];
     String module = args[i++];
     String path = args[i++];
+    
+    
+    log.info(String.format("Creating %s -  %s" , name, module)  );
+    
     packageName = args[i++];
     tablePackage = args[i++];
     List<Property> properties = Arrays.asList(args[i++].trim().split(",")).stream().map(p -> p.split(":")).map(a -> new Property(a[0], a[1])).toList();
@@ -58,12 +68,31 @@ public class CreateLayers {
     String uname = snakeToCamelUpper(name);
     
    
-    Property findBy = properties.stream().filter(p -> "String".equals(p.type)).findFirst().get();
+    Optional<Property> findBy = properties.stream().filter(p -> "String".equals(p.type)).findFirst();
 
-    write(path + "/"+ module + "/controller/" + uname + "Controller.java", getController(name, module));
-    write(path + "/"+ module  + "/data/"+ "/" + uname + ".java", getModel(name, properties, module));
-    write(path + "/"+ module + "/repository/"+ uname + "Repository.java", getRepository(name, module, findBy));
-    write(path + "/"+ module + "/service/"+  uname + "Service.java", getService(name, properties,findBy, module));
+    {
+		String file = path + "/"+ module + "/gen/controller/" + uname + "Controller.java";
+		write(file, getController(name, module));
+		log.debug(String.format("Created %s" , file)  );
+    }
+
+    {
+    	String file = path + "/"+ module  + "/gen/data/"+ "/" + uname + ".java";
+		write(file, getModel(name, properties, module));
+		log.debug(String.format("Created %s" , file)  );
+    }
+    
+    {
+		String file = path + "/"+ module + "/gen/repository/"+ uname + "Repository.java";
+		write(file, getRepository(name, module, findBy));
+		log.debug(String.format("Created %s" , file)  );
+    }
+
+    {
+		String file = path + "/"+ module + "/gen/service/"+  uname + "Service.java";
+		write(file, getService(name, properties,findBy, module));
+		log.debug(String.format("Created %s" , file)  );
+    }
   }
 
   public void write(String file, String contents) throws IOException {
@@ -98,19 +127,29 @@ public class CreateLayers {
 	}
   }
 
-  private String getService(String name, List<Property> properties, Property findBy, String module) {
+  private String getService(String name, List<Property> properties, Optional<Property> findBy, String module) {
     String uname = snakeToCamelUpper(name);
-    String pname = snakeToCamelUpper(findBy.name);
 
-    return "package " + packageName +"."+ module+ ".service;\n"
+    String findAllQuery;
+    String pname = null;
+
+	if(findBy.isPresent()) {
+		pname = snakeToCamelUpper(findBy.get().name) ;
+		findAllQuery = "        return " + name + "Repository.findBy"+pname+"ContainsAllIgnoringCaseOrderBy"+pname+"(query, page);\n";
+	}
+	else {
+		findAllQuery = "        return " + name + "Repository.findAllBy(page);\n";
+	}
+	
+	return "package " + packageName +"."+ module+ ".gen.service;\n"
         + "\n"
         + "import org.springframework.beans.factory.annotation.Autowired;\n"
         + "import org.springframework.stereotype.Service;\n"
         + "import org.springframework.data.domain.PageRequest;\n"
         + "import org.springframework.transaction.annotation.Transactional;\n"
         + "\n"
-        + "import " + packageName +"."+ module+ ".data." + uname + ";\n"
-        + "import " + packageName +"."+ module+ ".repository." + uname + "Repository;\n"
+        + "import " + packageName +"."+ module+ ".gen.data." + uname + ";\n"
+        + "import " + packageName +"."+ module+ ".gen.repository." + uname + "Repository;\n"
         + "\n"
         + "import reactor.core.publisher.Flux;\n"
         + "import reactor.core.publisher.Mono;\n"
@@ -134,13 +173,13 @@ public class CreateLayers {
         + "		return " + name + "Repository.findAll();\n"
         + "	}\n"
         + "\n"
-        + "	public Mono<" + uname + "> delete" + uname + "(Long " + name + "Id){\n"
+        + "	public Mono<" + uname + "> delete" +  "(Long " + name + "Id){\n"
         + "        return " + name + "Repository.findById(" + name + "Id)\n"
         + "                .flatMap(existing" + uname + " -> " + name + "Repository.delete(existing" + uname + ")\n"
         + "                .then(Mono.just(existing" + uname + ")));\n"
         + "    }\n"
         + "	\n"
-        + "    public Mono<" + uname + "> update" + uname + "(Long " + name + "Id,  " + uname + " " + name + "){\n"
+        + "    public Mono<" + uname + "> update" + "(Long " + name + "Id,  " + uname + " " + name + "){\n"
         + "        return " + name + "Repository.findById(" + name + "Id)\n"
         + "                .flatMap(db" + uname + " -> {\n" + 
         
@@ -154,27 +193,35 @@ public class CreateLayers {
         + "    }	\n"
         + "    \n"
         + "    public Flux<" + uname + "> findAllQuery(String query,  PageRequest page){\n"
-        + "        return " + name + "Repository.findBy"+pname+"ContainsAllIgnoringCaseOrderBy"+pname+"(query, page);\n"
+        + findAllQuery
         + "    }\n"
         + "}\n";
   }
 
-  private String getRepository(String name, String module, Property findBy) {
+  private String getRepository(String name, String module, Optional<Property> findBy) {
     String uname = snakeToCamelUpper(name);
-    String pname = snakeToCamelUpper(findBy.name);
-    return "package " + packageName +"."+ module+ ".repository;\n"
+	String pname;
+	String findByPnameDef  = "";
+
+    if(findBy.isPresent()) {
+		pname = snakeToCamelUpper(findBy.get().name);
+        findByPnameDef = "    Flux<" + uname + "> findBy"+pname+"ContainsAllIgnoringCaseOrderBy"+pname+"(String query, Pageable pages);\n";
+    }
+
+    return "package " + packageName +"."+ module+ ".gen.repository;\n"
         + "\n"
         + "import reactor.core.publisher.Flux;\n"
         + "import org.springframework.data.domain.Pageable;\n"
         + "import org.springframework.data.repository.reactive.ReactiveCrudRepository;\n"
         + "import org.springframework.data.repository.reactive.ReactiveSortingRepository;\n"
         + "\n"
-        + "import " + packageName +"."+ module+ ".data." + uname + ";\n"
+        + "import " + packageName +"."+ module+ ".gen.data." + uname + ";\n"
         + "\n"
         + "public interface " + uname + "Repository \n"
         + "					extends ReactiveCrudRepository<" + uname + ", Long>, ReactiveSortingRepository<" + uname
         + ", Long>{\n"
-        + "	Flux<" + uname + "> findBy"+pname+"ContainsAllIgnoringCaseOrderBy"+pname+"(String query, Pageable pages);\n"
+		+ "    Flux<" + uname + "> findAllBy(Pageable pages);\n"
+        + findByPnameDef
         + "\n"
         + "}\n"
         + "";
@@ -193,7 +240,7 @@ public class CreateLayers {
             "	@Column(\"" + p.name + "\")\n" +
                 "	private Long " + snakeToCamel(p.name.substring(0, p.name.length() - 3)) + ";\n");
       } else {
-        if (!p.equals(snakeToCamel(p.name))) {
+        if (!p.name.equals(snakeToCamel(p.name))) {
           ps.append(
               "	@Column(\"" + p.name + "\")\n");
         }
@@ -202,7 +249,7 @@ public class CreateLayers {
       }
     }
 
-    return "package " + packageName +"."+ module + ".data;\n"
+    return "package " + packageName +"."+ module + ".gen.data;\n"
         + "\n"
         + "import org.springframework.data.annotation.Id;\n"
         + "import org.springframework.data.relational.core.mapping.Table;\n"
@@ -234,7 +281,7 @@ public class CreateLayers {
     String lname = sname.toLowerCase();
     String upperName = snakeToCamelUpper(sname);
     String name = snakeToCamel(sname);
-    String result = "package " + packageName +"."+ module +".controller;\n"
+    String result = "package " + packageName +"."+ module +".gen.controller;\n"
         + "\n"
         + "import org.springframework.data.domain.PageRequest;\n"
         + "import org.springframework.beans.factory.annotation.Autowired;\n"
@@ -251,8 +298,8 @@ public class CreateLayers {
         + "import org.springframework.web.bind.annotation.RestController;\n"
         + "\n"
         + "import " + packageName + ".lib.PostQuery;\n"
-        + "import " + packageName  +"."+ module + ".data." + upperName + ";\n"
-        + "import " + packageName  +"."+ module + ".service." + upperName + "Service;\n"
+        + "import " + packageName  +"."+ module + ".gen.data." + upperName + ";\n"
+        + "import " + packageName  +"."+ module + ".gen.service." + upperName + "Service;\n"
         + "\n"
         + "import reactor.core.publisher.Flux;\n"
         + "import reactor.core.publisher.Mono;\n"
@@ -276,13 +323,13 @@ public class CreateLayers {
         + "	}\n"
         + "\n"
         + "	@PostMapping(\"/query\")\n"
-        + "	public Flux<" + upperName + "> getAll" + upperName + "Query(@RequestBody PostQuery query){\n"
+        + "	public Flux<" + upperName + "> getAll" + "Query(@RequestBody PostQuery query){\n"
         + "		return " + name + "Service.findAllQuery(query.getQuery(), PageRequest.of(0, 50));\n"
         + "	}\n"
         + ""
         + "\n"
         + "	@GetMapping(\"/{" + name + "Id}\")\n"
-        + "	 public Mono<ResponseEntity<" + upperName + ">> get" + upperName + "ById(@PathVariable Long " + name
+        + "	 public Mono<ResponseEntity<" + upperName + ">> get" + "ById(@PathVariable Long " + name
         + "Id){\n"
         + "        Mono<" + upperName + "> " + name + " = " + name + "Service.findById(" + name + "Id);\n"
         + "        return " + name + ".map(u -> ResponseEntity.ok(u))\n"
@@ -290,17 +337,17 @@ public class CreateLayers {
         + "    }\n"
         + "	\n"
         + "    @PutMapping(\"/{" + name + "Id}\")\n"
-        + "    public Mono<ResponseEntity<" + upperName + ">> update" + upperName + "ById(@PathVariable Long " + name
+        + "    public Mono<ResponseEntity<" + upperName + ">> update" +  "ById(@PathVariable Long " + name
         + "Id, @RequestBody " + upperName + " " + name + "){\n"
-        + "        return " + name + "Service.update" + upperName + "(" + name + "Id," + name + ")\n"
+        + "        return " + name + "Service.update" + "(" + name + "Id," + name + ")\n"
         + "                .map(updated" + upperName + " -> ResponseEntity.ok(updated" + upperName + "))\n"
         + "                .defaultIfEmpty(ResponseEntity.badRequest().build());\n"
         + "    }\n"
         + "    \n"
         + "    \n"
         + "    @DeleteMapping(\"/{" + name + "Id}\")\n"
-        + "    public Mono<ResponseEntity<Void>> delete" + upperName + "ById(@PathVariable Long " + name + "Id){\n"
-        + "        return " + name + "Service.delete" + upperName + "(" + name + "Id)\n"
+        + "    public Mono<ResponseEntity<Void>> delete" + "ById(@PathVariable Long " + name + "Id){\n"
+        + "        return " + name + "Service.delete" +  "(" + name + "Id)\n"
         + "                .map( r -> ResponseEntity.ok().<Void>build())\n"
         + "                .defaultIfEmpty(ResponseEntity.notFound().build());\n"
         + "    }\n"
