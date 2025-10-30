@@ -8,7 +8,6 @@ insert into sis_empresa
 values
 (1, 'Sistema');
 
-
 -- tipo
 insert into ger_tipo_grupo
 (id, nome)
@@ -19,6 +18,8 @@ values
 (4, 'Email'),
 (5, 'Tipo pessoa'),
 (6, 'Status');
+select setid('ger_tipo_grupo', 6);
+
 
 insert into ger_tipo 
 (id, grupo_id, nome, detalhe)
@@ -36,6 +37,7 @@ values
 (11, 6, 'Status', 'Status geral'),
 (12, 6, 'Status cliente', 'Status especifico cliente')
 ;
+select setid('ger_tipo', 12);
 
 -- status
 insert into ger_status_tipo
@@ -43,34 +45,37 @@ insert into ger_status_tipo
 values
 (1, 1, 11, 'Ok' ),
 (2, 1, 11, 'Cancelado');
+select setid('ger_status_tipo', 2);
 
 insert into ger_status_proximo
 (id, versao, status_atual_id, status_proximo_id)
 values
 (1, 1, 1, 2);
+select setid('ger_status_proximo', 1);
 
 insert into ger_status_historico
 (id, versao,  tipo_id, processo_id, data, observacao, status_id)
 values
 (1, 1, 11, 100, '2025-11-10 10:50:31', 'Status inicial', 1),
 (2, 1, 11, 100, '2025-11-11 10:50:31', 'Canelado', 2);
+select setid('ger_status_historico', 2);
 
 
 insert into ger_status
 (id, versao, tipo_id, processo_id, atual_id)
 values 
-(1, 1, 2);
+(1, 1, 11, 100, 2);
 
 -- historico
 insert into ger_historico_grupo
 (id, versao, nome, observacao)
 values
-(1, 1, 'Usuario login', 'Registro de historico de login')
+(1, 1, 'Usuario login', 'Registro de historico de login');
 
 insert into ger_historico
 (id, versao, data, grupo_id, registro)
 values
-(1, 1, '2025-11-10 11:30:59', 1, 'Usuario entrou no sistema')
+(1, 1, '2025-11-10 11:30:59', 1, 'Usuario entrou no sistema');
 
 -- cidade estado
 insert into ger_pais
@@ -162,9 +167,27 @@ values
 (1, 1, 1, 1);
 
 
+insert into ger_status
+(versao, tipo_id, processo_id, atual_id)
+values 
+(1, 12, 000, 1);
+
+insert into ger_status_historico
+(versao, tipo_id, processo_id, status_id, data, observacao)
+values 
+(1, 12, 000, 1, '2025-11-11 10:50:20', 'Cliente criado');
+
+insert into ger_historico
+(versao, data, grupo_id, registro)
+values 
+(1, '2025-11-11 10:50:20', 1, 'Cliente criado');
+
+
 -- cliente
+do $$
+declare 
+  pid int = rdnid();
 begin 
-pid int = rndid()
 
 insert into ger_status_historico
 (versao, tipo_id, processo_id, status_id, data, observacao)
@@ -172,12 +195,13 @@ values
 (1, 12, pid, 1, '2025-11-11 10:50:20', 'Cliente criado');
 
 insert into ger_status
-(versao, tipo_id, processo_id, status_id)
+(versao, tipo_id, processo_id, atual_id)
 values 
-(1, 1, 12, pid, 1);
+(1, 12, pid, 1);
 
 insert into ger_historico
 (versao, data, grupo_id, registro)
+values 
 (1, '2025-11-11 10:50:20', 1, 'Cliente criado');
 
 
@@ -185,5 +209,6 @@ insert into ger_cliente
 (id, versao, status_id, historico_id, pessoa_id)
 values
 (1, 1, lastid('ger_status'), lastid('ger_historico'), 1);
-end 
+end $$; 
 
+select * from ger_cliente;
