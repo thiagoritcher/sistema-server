@@ -52,17 +52,23 @@ create table ger_status_proximo(
 create table ger_status_historico(
     id serial primary key,
     versao int,
-    processo int, 
+    tipo_id int references ger_tipo(id),
+    processo_id int, 
+    status_id int references ger_status_tipo(id),
     data timestamp,
-    observacao varchar(255),
-    status_id int references ger_status_tipo(id)
+    observacao varchar(255)
 );
+
+create index on ger_status_historico (tipo_id, processo_id);
 
 create table ger_status (
     id serial primary key,
     versao int,
+    tipo_id int references ger_tipo(id),
+    processo_id int, 
     atual_id int references ger_status_historico(id)
 );
+create index on ger_status (tipo_id, processo_id);
 
 create table ger_historico_grupo(
     id serial primary key,
@@ -140,11 +146,18 @@ create table ger_pessoa_documento (
     documento_id int references ger_documento(id)
 );
 
+create table ger_pais (
+  id serial primary key, 
+  versao int,
+  nome varchar(255), 
+  codigo_telefone int
+);
+
 create table ger_estado (
     id serial primary key, 
     versao int, 
     nome varchar(255),
-    pais varchar(127)
+    pais_id int references ger_pais(id)
 );
 
 create table ger_cidade (
