@@ -85,6 +85,14 @@ create table ger_historico (
     registro varchar(255)
 );
 
+create table ger_grupo (
+    id serial primary key, 
+    versao int,
+    tipo_id int references ger_tipo(id),
+    nome varchar(255),
+    superior_id int references ger_grupo(id)
+);
+
 create table ger_pessoa (
     id serial primary key, 
     versao int, 
@@ -266,13 +274,6 @@ create table ger_pessoa_telefone (
     telefone_id int references ger_telefone(id)
 );
 
-create table ger_grupo (
-	id serial primary key, 
-    tipo_id int references ger_tipo(id),
-    versao int,
-    nome varchar(255),
-    superior_id int references ger_grupo(id)
-);
 
 create table ger_cliente (
     id serial primary key, 
@@ -280,14 +281,9 @@ create table ger_cliente (
     status_id int references ger_status(id),
     historico_id int references ger_historico(id),
     pessoa_id int references ger_pessoa(id)
+    grupo_id int references ger_grupo(id)
 );
 
-create table ger_cliente_grupo (
-	id serial primary key, 
-    versao int,
-    grupo_id int references ger_grupo(id),
-    cliente_id int references ger_cliente(id)
-);
 
 create table ger_fornecedor (
     id serial primary key, 
@@ -295,7 +291,7 @@ create table ger_fornecedor (
     status_id int references ger_status(id),
     historico_id int references ger_historico(id),
     pessoa_id int references ger_pessoa(id),
-    grupo_id int references ger_cliente_grupo(id)
+    grupo_id int references ger_grupo(id)
 );
 
 create table ger_fornecedor_grupo (
